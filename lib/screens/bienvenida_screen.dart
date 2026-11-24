@@ -4,29 +4,34 @@ import '../routes.dart';
 import '../widgets/logo_app.dart';
 import '../widgets/pixel_fire_view.dart';
 
+// Pantalla inicial de bienvenida que muestra el logotipo animado y da acceso al login o registro.
 class BienvenidaScreen extends StatelessWidget {
   const BienvenidaScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final ancho = MediaQuery.of(context).size.width;
-    final logo = (ancho * 0.95).clamp(220.0, 460.0).toDouble();
-    final oscuro = Theme.of(context).brightness == Brightness.dark;
+    final ancho = MediaQuery.of(context).size.width; // Ancho actual de la pantalla del dispositivo.
+    final logo = (ancho * 0.95).clamp(220.0, 460.0).toDouble(); // Tamaño responsivo del logo acotado entre 220 y 460 px.
+    final oscuro = Theme.of(context).brightness == Brightness.dark; // Detecta si está activo el modo oscuro.
+
     return Scaffold(
-      backgroundColor: oscuro ? AppTheme.fondo : const Color(0xFFFFF8EE),
-      body: PixelFireView(
+      backgroundColor: oscuro ? AppTheme.fondo : const Color(0xFFFFF8EE), // Fondo adaptado según el brillo del tema.
+      body: PixelFireView( // Fondo decorativo animado con efecto de fuego pixelado.
         child: SafeArea(
           child: Center(
-            child: SingleChildScrollView(
+            child: SingleChildScrollView( // Permite desplazamiento vertical en pantallas pequeñas o apaisadas.
               padding: const EdgeInsets.all(AppTheme.espacioXL),
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 420),
+                constraints: const BoxConstraints(maxWidth: 420), // Limita el ancho máximo del contenido en pantallas grandes.
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    // --- LOGOTIPO PRINCIPAL ---
                     LogoApp(ancho: logo, animado: true),
                     const SizedBox(height: AppTheme.espacioL),
-                    TweenAnimationBuilder<double>(
+
+                    // --- MENSAJE DE BIENVENIDA CON ANIMACIÓN DE ENTRADA ---
+                    TweenAnimationBuilder<double>( // Anima la aparición progresiva (opacidad y desplazamiento vertical) del título.
                       tween: Tween(begin: 0, end: 1),
                       duration: const Duration(milliseconds: 1200),
                       curve: Curves.easeOut,
@@ -44,15 +49,17 @@ class BienvenidaScreen extends StatelessWidget {
                           color: oscuro ? Colors.white : Colors.black,
                           letterSpacing: 1,
                           shadows: oscuro
-                              ? const [Shadow(color: AppTheme.naranjaFuerte, offset: Offset(2, 2))]
+                              ? const [Shadow(color: AppTheme.naranjaFuerte, offset: Offset(2, 2))] // Sombra retro solo en modo oscuro.
                               : const [],
                         ),
                       ),
                     ),
                     const SizedBox(height: AppTheme.espacioXL),
+
+                    // --- BOTONES DE ACCESO ---
                     SizedBox(
                       width: double.infinity,
-                      child: FilledButton.icon(
+                      child: FilledButton.icon( // Botón principal para ir al inicio de sesión.
                         onPressed: () => Navigator.pushNamed(context, Rutas.login),
                         style: FilledButton.styleFrom(
                           backgroundColor: AppTheme.naranja,
@@ -66,7 +73,7 @@ class BienvenidaScreen extends StatelessWidget {
                     const SizedBox(height: AppTheme.espacioM),
                     SizedBox(
                       width: double.infinity,
-                      child: OutlinedButton.icon(
+                      child: OutlinedButton.icon( // Botón secundario con borde para crear una cuenta nueva.
                         onPressed: () => Navigator.pushNamed(context, Rutas.registro),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppTheme.turquesa,
