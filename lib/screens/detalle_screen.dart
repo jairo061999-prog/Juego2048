@@ -13,7 +13,7 @@ import '../widgets/tile_widget.dart';
 /// Recibe solo el id y consulta la BD. Si elimina la partida,
 /// devuelve true con Navigator.pop para que el historial se actualice.
 class DetalleScreen extends StatefulWidget {
-  final int id;
+  final int id; // Identificador único de la partida a consultar.
 
   const DetalleScreen({super.key, required this.id});
 
@@ -22,21 +22,23 @@ class DetalleScreen extends StatefulWidget {
 }
 
 class _DetalleScreenState extends State<DetalleScreen> {
-  final _dao = PartidaDao();
-  late Future<Partida?> _futuro;
+  final _dao = PartidaDao(); // Acceso a BD para consultar o eliminar la partida.
+  late Future<Partida?> _futuro; // Promesa con los datos de la partida cargada.
 
   @override
   void initState() {
     super.initState();
-    _futuro = _dao.obtenerPorId(widget.id);
+    _futuro = _dao.obtenerPorId(widget.id); // Inicia la consulta en BD al abrir la pantalla.
   }
 
+  // Vuelve a lanzar la consulta si ocurre un error o se solicita reintentar.
   void _recargar() {
     setState(() {
       _futuro = _dao.obtenerPorId(widget.id);
     });
   }
 
+  // Pide confirmación al usuario, borra la partida en BD y cierra la pantalla notificando el cambio.
   Future<void> _eliminar() async {
     final ok = await ConfirmDialog.mostrar(
       context,
@@ -44,10 +46,10 @@ class _DetalleScreenState extends State<DetalleScreen> {
       mensaje: 'Esta acción no se puede deshacer. ¿Seguro?',
       textoAceptar: 'Eliminar',
     );
-    if (!ok) return;
+    if (!ok) return; // Cancela si el usuario rechaza el diálogo.
     try {
       await _dao.eliminar(widget.id);
-      if (mounted) Navigator.pop(context, true);
+      if (mounted) Navigator.pop(context, true); // Devuelve true para indicar que el listado previo debe refrescarse.
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
@@ -59,21 +61,22 @@ class _DetalleScreenState extends State<DetalleScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Detalle de partida')),
-      body: AsyncDataView<Partida?>(
+      body: AsyncDataView<Partida?>( // Gestiona automáticamente los estados de carga, error y datos listos.
         future: _futuro,
         onReintentar: _recargar,
         builder: (context, p) {
           if (p == null) {
-            return const EmptyStateView(mensaje: 'La partida ya no existe');
+            return const EmptyStateView(mensaje: 'La partida ya no existe'); // Muestra aviso si el registro no se encuentra.
           }
           return SingleChildScrollView(
             padding: const EdgeInsets.all(AppTheme.espacioL),
             child: Column(
               children: [
+                // --- CABECERA: FICHA MÁXIMA, JUGADOR Y FECHA ---
                 SizedBox(
                   width: AppTheme.tamFichaDetalle,
                   height: AppTheme.tamFichaDetalle,
-                  child: TileWidget(valor: p.fichaMaxima, paleta: appState.paleta),
+                  child: TileWidget(valor: p.fichaMaxima, paleta: appState.paleta), // Representación visual de la ficha récord.
                 ),
                 const SizedBox(height: AppTheme.espacioM),
                 Text(p.usuario,
@@ -81,10 +84,12 @@ class _DetalleScreenState extends State<DetalleScreen> {
                         fontSize: AppTheme.tamJugador, fontWeight: FontWeight.bold)),
                 Text(formatoFecha(p.fecha)),
                 const SizedBox(height: AppTheme.espacioM),
+
+                // --- CUADRÍCULA DE MÉTRICAS DE LA PARTIDA ---
                 GridView.count(
-                  crossAxisCount: 2,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount: 2, // Muestra las tarjetas en 2 columnas.
+                  shrinkWrap: true, // Ajusta su altura al contenido dentro del ScrollView.
+                  physics: const NeverScrollableScrollPhysics(), // Delega el desplazamiento al SingleChildScrollView padre.
                   childAspectRatio: AppTheme.proporcionTarjeta,
                   children: [
                     StatCard(titulo: 'Puntuación', valor: '${p.puntuacion}', icono: Icons.star, color: AppTheme.amarillo),
@@ -94,6 +99,8 @@ class _DetalleScreenState extends State<DetalleScreen> {
                   ],
                 ),
                 const SizedBox(height: AppTheme.espacioM),
+
+                // --- BOTÓN DE ELIMINACIÓN ---
                 FilledButton.icon(
                   onPressed: _eliminar,
                   style: FilledButton.styleFrom(backgroundColor: AppTheme.rosa),
