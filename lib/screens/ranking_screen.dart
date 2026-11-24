@@ -1,0 +1,151 @@
+import 'package:flutter/material.dart';
+import '../app_theme.dart';
+import '../data/partida_dao.dart';
+import '../models/estadisticas.dart';
+import '../models/partida.dart';
+import '../routes.dart';
+import '../services/app_state.dart';
+import '../utils/formato.dart';
+import '../widgets/async_data_view.dart';
+import '../widgets/empty_state_view.dart';
+import '../widgets/partida_list_item.dart';
+import '../widgets/stat_card.dart';
+
+class _DatosRanking {
+  final List<Partida> top;
+  final Estadisticas global;
+  final List<EstadisticaJugador> jugadores;
+  const _DatosRanking(this.top, this.global, this.jugadores);
+}
+
+class RankingScreen extends StatefulWidget {
+  const RankingScreen({super.key});
+
+  @override
+  State<RankingScreen> createState() => _RankingScreenState();
+}
+
+class _RankingScreenState extends State<RankingScreen> {
+  final _dao = PartidaDao();
+  late Future<_DatosRanking> _futuro;
+
+  @override
+  void initState() {
+    super.initState();
+    _futuro = _cargar();
+  }
+
+  Future<_DatosRanking> _cargar() async {
+    final top = await _dao.obtenerRanking(limite: 10);
+    final global = await _dao.obtenerEstadisticasGlobales();
+    final jugadores = await _dao.obtenerEstadisticasPorJugador();
+    return _DatosRanking(top, global, jugadores);
+  }
+
+  Future<void> _recargar() async {
+    final nuevo = _cargar();
+    setState(() {
+      _futuro = nuevo;
+    });
+    try {
+      await nuevo;
+    } catch (_) {
+      // el error lo muestra AsyncDataView
+    }
+  }
+
+  Widget _titulo(String texto) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppTheme.espacioS),
+        child: Text(texto,
+            style: const TextStyle(fontSize: AppTheme.tamMedio, fontWeight: FontWeight.bold)),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    return AsyncDataView<_DatosRanking>(
+      future: _futuro,
+      onReintentar: _recargar,
+      builder: (context, d) {
+        if (d.global.partidas == 0) {
+          return RefreshIndicator(
+            onRefresh: _recargar,
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: const [
+                SizedBox(
+                  height: AppTheme.altoVacio,
+                  child: EmptyStateView(
+                    icono: Icons.emoji_events_outlined,
+                    mensaje: 'Aún no hay partidas.\nJuega una para ver el ranking.',
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+        final g = d.global;
+        return RefreshIndicator(
+          onRefresh: _recargar,
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(AppTheme.espacioM),
+            children: [
+              _titulo('Estadísticas globales'),
+              GridView.count(
+                crossAxisCount: 3,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                childAspectRatio: AppTheme.proporcionTarjeta,
+                children: [
+                  StatCard(titulo: 'Partidas', valor: '${g.partidas}', icono: Icons.sports_esports),
+                  StatCard(
+                      titulo: 'Récord',
+                      valor: '${g.puntuacionMaxima}',
+                      icono: Icons.emoji_events,
+                      color: AppTheme.amarillo),
+                  StatCard(
+                      titulo: 'Media',
+                      valor: g.puntuacionMedia.toStringAsFixed(0),
+                      icono: Icons.bar_chart,
+                      color: AppTheme.azul),
+                  StatCard(
+                      titulo: 'Ficha máx.',
+                      valor: '${g.fichaMaxima}',
+                      icono: Icons.grid_view,
+                      color: AppTheme.morado),
+                  StatCard(
+                      titulo: 'Tiempo total',
+                      valor: formatoTiempo(g.tiempoTotalSegundos),
+                      icono: Icons.timer,
+                      color: AppTheme.turquesa),
+                ],
+              ),
+              _titulo('Top 10 partidas'),
+              for (int i = 0; i < d.top.length; i++)
+                PartidaListItem(
+                  partida: d.top[i],
+                  paleta: appState.paleta,
+                  posicion: i + 1,
+                  onTap: () async {
+                    await Navigator.pushNamed(context, Rutas.detalle, arguments: d.top[i].id);
+                    if (mounted) _recargar();
+                  },
+                ),
+              _titulo('Por jugador'),
+              for (final j in d.jugadores)
+                Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.person),
+                    title: Text(j.usuario),
+                    subtitle: Text('${j.partidas} partida(s)'),
+                    trailing: Text('${j.mejorPuntuacion} pts',
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
