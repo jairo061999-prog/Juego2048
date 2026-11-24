@@ -6,7 +6,9 @@ import 'screens/juego_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/registro_screen.dart';
 
+// Centraliza los nombres de ruta y la generación dinámica de pantallas con sus argumentos tipados.
 class Rutas {
+  // --- IDENTIFICADORES DE RUTA ---
   static const String bienvenida = '/bienvenida';
   static const String login = '/login';
   static const String registro = '/registro';
@@ -14,6 +16,7 @@ class Rutas {
   static const String juego = '/juego';
   static const String detalle = '/detalle';
 
+  // Resuelve la ruta solicitada por el Navigator y extrae los parámetros necesarios de ajustes.arguments.
   static Route<dynamic> generar(RouteSettings ajustes) {
     final Widget pantalla;
     if (ajustes.name == login) {
@@ -23,11 +26,11 @@ class Rutas {
     } else if (ajustes.name == home) {
       pantalla = const HomeScreen();
     } else if (ajustes.name == juego) {
-      pantalla = JuegoScreen(continuar: ajustes.arguments as bool);
+      pantalla = JuegoScreen(continuar: ajustes.arguments as bool); // Recibe si debe reanudar una partida guardada.
     } else if (ajustes.name == detalle) {
-      pantalla = DetalleScreen(id: ajustes.arguments as int);
+      pantalla = DetalleScreen(id: ajustes.arguments as int); // Recibe el ID de la partida a consultar en BD.
     } else {
-      pantalla = const BienvenidaScreen();
+      pantalla = const BienvenidaScreen(); // Ruta por defecto si el nombre no coincide o es la inicial.
     }
     return MaterialPageRoute(builder: (_) => pantalla, settings: ajustes);
   }
